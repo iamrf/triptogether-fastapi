@@ -15,11 +15,13 @@ load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("MONGO_DB_NAME", "tourbeau")
+WEB_APP_URL = os.getenv("WEB_APP_URL")
 
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("WEB_APP_URL")],
+    allow_origins=[WEB_APP_URL] if WEB_APP_URL else ["*"],
     allow_credentials=True,
     allow_methods="*",
     allow_headers=["*"],
