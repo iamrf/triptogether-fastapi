@@ -19,7 +19,7 @@ DB_NAME = os.getenv("MONGO_DB_NAME", "tourbeau")
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[os.getenv("WEB_APP_URL")],
     allow_credentials=True,
     allow_methods="*",
     allow_headers=["*"],
