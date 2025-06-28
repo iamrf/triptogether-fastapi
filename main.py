@@ -1,6 +1,7 @@
 # run with : uvicorn main:app --reload
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from datetime import datetime
@@ -16,6 +17,13 @@ MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("MONGO_DB_NAME", "tourbeau")
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods="*",
+    allow_headers=["*"],
+)
 
 try:
     client = AsyncIOMotorClient(MONGO_URI, tlsCAFile=certifi.where())  # استفاده از certifi
