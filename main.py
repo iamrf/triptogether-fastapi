@@ -7,8 +7,10 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
 import os
+import requests
 from dotenv import load_dotenv
 import certifi  # اضافه کردن certifi
+from models import User, UserBase
 from trip import Trip
 
 load_dotenv()
@@ -16,6 +18,7 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("MONGO_DB_NAME", "tourbeau")
 WEB_APP_URL = os.getenv("WEB_APP_URL")
+TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 app = FastAPI()
 
@@ -35,17 +38,6 @@ except Exception as e:
     print(f"Failed to connect to MongoDB: {str(e)}")
     raise Exception(f"MongoDB connection error: {str(e)}")
 
-# مدل‌های Pydantic
-class UserIn(BaseModel):
-    telegram_id: int
-    first_name: str
-    last_name: Optional[str] = None
-    username: Optional[str] = None
-
-class UserInDB(UserIn):
-    created_at: datetime
-    updated_at: datetime
-
 
 # تست اتصال دیتابیس
 @app.get("/api/test-db")
@@ -56,11 +48,57 @@ async def test_db():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
 
-# endpointهای کاربر
-@app.post("/api/users")
-async def save_user(user: UserIn):
+async def get_telegram_profile_photo(telegram_id: int) -> str | None:
     try:
-        user_in_db = UserInDB(**user.model_dump(), created_at=datetime.utcnow(), updated_at=datetime.utcnow())
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUserProfilePhotos"
+        params = {"user_id": telegram_id, "limit": 1}
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get("ok") and data["result"]["total_count"] > 0:
+            photo = data["result"]["photos"][0][0]
+            file_id = photo["file_id"]
+            file_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getFile?file_id={file_id}"
+            file_response = requests.get(file_url)
+            file_response.raise_for_status()
+            file_data = file_response.json()
+            if file_data.get("ok"):
+                file_path = file_data["result"]["file_path"]
+                return f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
+        return None
+    except Exception as e:
+        return None
+
+# endpointهای کاربر
+@app.post("/api/users", response_model=User)
+async def save_user(user: UserBase):
+    try:
+        current_time = datetime.utcnow()
+        existing_user = await db.users.find_one({"telegram_id": user.telegram_id})
+        if existing_user:
+            update_data = {
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "username": user.username,
+                "updated_at": current_time,
+                "$push": {"logins": current_time}
+            }
+            profile_photo = await get_telegram_profile_photo(user.telegram_id)
+            if profile_photo:
+                update_data["profile_photo"] = profile_photo
+            
+            result = await db.users.update_one(
+                {"telegram_id": user.telegram_id},
+                {"$set": update_data}
+            )
+            if result.modified_count:
+                return await db.users.find_one({"telegram_id": user.telegram_id})
+            raise HTTPException(status_code=500, detail="Failed to update user")
+
+        profile_photo = await get_telegram_profile_photo(user.telegram_id)
+
+        user_in_db = User(**user.model_dump(),profile_photo=profile_photo, logins=[current_time] ,created_at=current_time, updated_at=current_time)
         result = await db.users.update_one(
             {"telegram_id": user_in_db.telegram_id},
             {"$set": user_in_db.model_dump()},
