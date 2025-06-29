@@ -78,21 +78,25 @@ async def save_user(user: UserBase):
         existing_user = await db.users.find_one({"telegram_id": user.telegram_id})
         if existing_user:
             update_data = {
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "username": user.username,
-                "updated_at": current_time,
-                "$push": {"logins": current_time}
+                "$set":{
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "username": user.username,
+                    "updated_at": current_time,
+                },
+                "$push": {
+                    "logins": current_time
+                }
             }
             profile_photo = await get_telegram_profile_photo(user.telegram_id)
             if profile_photo:
-                update_data["profile_photo"] = profile_photo
+                update_data["$set"]["profile_photo"] = profile_photo
             
             result = await db.users.update_one(
                 {"telegram_id": user.telegram_id},
-                {"$set": update_data}
+                update_data
             )
-            if result.modified_count:
+            if result.modified_count or result.matched_count:
                 return await db.users.find_one({"telegram_id": user.telegram_id})
             raise HTTPException(status_code=500, detail="Failed to update user")
 
