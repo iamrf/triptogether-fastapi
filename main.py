@@ -3,9 +3,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List
+from typing import List
 import os
 import requests
 from dotenv import load_dotenv
