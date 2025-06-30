@@ -110,13 +110,7 @@ async def save_user(user: UserBase):
             {"$set": user_in_db.model_dump()},
             upsert=True
         )
-        return {
-            "status": 200,
-            "message": "کاربر با موفقیت ذخیره شد",
-            "matched_count": result.matched_count,
-            "modified_count": result.modified_count,
-            "upserted_id": str(result.upserted_id) if result.upserted_id else None
-        }
+        return await db.users.find_one({"telegram_id": user.telegram_id})
     except Exception as e:
         print(f"Error while saving user: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to save user: {str(e)}")
