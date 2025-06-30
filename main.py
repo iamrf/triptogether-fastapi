@@ -23,7 +23,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[WEB_APP_URL] if WEB_APP_URL else ["*"],
+    allow_origins=[WEB_APP_URL],
     allow_credentials=True,
     allow_methods="*",
     allow_headers=["*"],
@@ -86,7 +86,7 @@ async def save_user(user: UserBase):
                 "$push": {
                     "logins": {
                         "$each": [current_time],
-                        "$slice": -5
+                        "$slice": -50
                     }
                 }
             }
