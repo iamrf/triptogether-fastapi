@@ -84,7 +84,10 @@ async def save_user(user: UserBase):
                     "updated_at": current_time,
                 },
                 "$push": {
-                    "logins": current_time
+                    "logins": {
+                        "$each": [current_time],
+                        "$slice": -5
+                    }
                 }
             }
             profile_photo = await get_telegram_profile_photo(user.telegram_id)
