@@ -11,6 +11,11 @@ class UserBase(BaseModel):
 
 class User(UserBase):
     profile_photo: Optional[str] = None
+    national_code: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    birthdate: Optional[datetime]
+    superuser: bool = False
     created_at: datetime
     updated_at: datetime
     logins: List[datetime]
