@@ -14,7 +14,7 @@ class User(UserBase):
     national_code: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
-    birthdate: Optional[datetime]
+    birthdate: Optional[datetime] = None
     superuser: bool = False
     created_at: datetime
     updated_at: datetime
